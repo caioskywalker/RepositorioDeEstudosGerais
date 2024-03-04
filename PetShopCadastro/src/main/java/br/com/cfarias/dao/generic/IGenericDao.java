@@ -1,6 +1,7 @@
 package br.com.cfarias.dao.generic;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.Collection;
 
@@ -14,8 +15,8 @@ public interface IGenericDao <T extends Persistente , E extends Serializable> {
 	
 	public void alterar(T entity) throws SQLException;
 	
-	public T consultar(E valor);
+	public T consultar(E valor) throws Exception;
 	
-	public Collection<T> buscarTodos();
+	public Collection<T> buscarTodos() throws Exception;
 
 }

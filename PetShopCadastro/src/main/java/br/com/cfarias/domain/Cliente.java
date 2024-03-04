@@ -26,7 +26,7 @@ public class Cliente implements Persistente {
 	@ColunaTabela(dbName = "animal" , setJavaName = "setAnimal")
 	private List<Animal> animal;
 
-	public Long getI() {
+	public Long getId() {
 		return idCliente;
 	}
 
@@ -73,6 +73,8 @@ public class Cliente implements Persistente {
 	public void setAnimal(List<Animal> animal) {
 		this.animal = animal;
 	}
+
+
 	
 	
 	

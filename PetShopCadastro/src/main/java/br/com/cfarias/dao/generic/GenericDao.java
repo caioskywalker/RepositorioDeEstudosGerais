@@ -6,7 +6,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+
+import javax.naming.spi.DirStateFactory.Result;
 
 import br.com.cfarias.anotations.ColunaTabela;
 import br.com.cfarias.anotations.Tabela;
@@ -47,8 +51,9 @@ public abstract class GenericDao<T extends Persistente, E extends Serializable> 
 		}
 		return null;
 	}
-	
-	private Object getValueByType(Class<?> typeField, ResultSet rs, String fieldName) throws ClassNotFoundException, SQLException {
+
+	private Object getValueByType(Class<?> typeField, ResultSet rs, String fieldName)
+			throws ClassNotFoundException, SQLException {
 		if (typeField.equals(Integer.TYPE)) {
 			return rs.getInt(fieldName);
 		} else if (typeField.equals(Long.TYPE)) {
@@ -65,7 +70,6 @@ public abstract class GenericDao<T extends Persistente, E extends Serializable> 
 			throw new ClassNotFoundException("TIPO DE CLASSE NÃO CONHECIDO: " + typeField);
 		}
 	}
-	
 
 	private void setValueByType(T entity, Method method, Class<?> classField, ResultSet rs, String fieldName)
 			throws SQLException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
@@ -247,21 +251,91 @@ public abstract class GenericDao<T extends Persistente, E extends Serializable> 
 	}
 
 	@Override
-	public T consultar(E valor) {
-		Connection connection = getConnection();
+	public T consultar(E valor) throws Exception {
+		Connection connection = null;
 		PreparedStatement stm = null;
-		setParametrosQueryAtualizacao(stm, valor);
+		ResultSet rs = null;
+
 		try {
-			stm = connection.prepareStatement();
-			
+			validarMaisDeUmRegistro(valor);
+			connection = getConnection();
+			stm = connection.prepareStatement(
+					"SELECT * FROM " + getTableName() + " WHERE " + getNomeCampoChave(getTipoClasse()) + " = ?");
+			setParametrosQuerySelect(stm, valor);
+			rs = stm.executeQuery();
+			if (rs.next()) {
+				T entity = getTipoClasse().getConstructor(null).newInstance(null);
+				Field[] fields = entity.getClass().getDeclaredFields();
+				for (Field field : fields) {
+					if (field.isAnnotationPresent(ColunaTabela.class)) {
+						ColunaTabela coluna = field.getAnnotation(ColunaTabela.class);
+						String dbName = coluna.dbName();
+						String javaSetName = coluna.setJavaName();
+						Class<?> classField = field.getType();
+						try {
+							Method method = entity.getClass().getMethod(javaSetName, classField);
+							setValueByType(entity, method, classField, rs, dbName);
+						} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+							throw new Exception("Erro ao consultar objeto ", e);
+						} catch (ClassNotFoundException e) {
+							throw new Exception("Erro ao consultar objeto", e);
+						}
+					}
+				}
+				return entity;
+			}
+		} catch (SQLException | InstantiationException | IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException | NoSuchMethodException | SecurityException | TypeNotPresentException e) {
+			throw new Exception("Erro ao consultar objeto ", e);
+		} finally {
+
+			closeConnection(connection, stm, rs);
 		}
+
 		return null;
 	}
 
 	@Override
-	public Collection<T> buscarTodos() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public Collection<T> buscarTodos() throws Exception {
+		List<T> list = new ArrayList<>();
+		Connection connection = null;
+		PreparedStatement stm = null;
+		ResultSet rs = null;
+        try {
+		
+			connection = getConnection();
+			stm = connection.prepareStatement("SELECT * FROM " + getTableName());
+			rs = stm.executeQuery();
+		    while (rs.next()) {
+		    	T entity = getTipoClasse().getConstructor(null).newInstance(null);
+		    	Field[] fields = entity.getClass().getDeclaredFields();
+		        for (Field field : fields) {
+		        	if (field.isAnnotationPresent(ColunaTabela.class)) {
+		        		ColunaTabela coluna = field.getAnnotation(ColunaTabela.class);
+		                String dbName = coluna.dbName();
+		                String javaSetName = coluna.setJavaName();
+		                Class<?> classField = field.getType();
+		        		try {
+		                    Method method = entity.getClass().getMethod(javaSetName, classField);
+		                    setValueByType(entity, method, classField, rs, dbName);
+		                    
+		                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+		                	throw new NoSuchMethodException();
+		                } catch (TypeNotPresentException e) {
+		                	throw new TypeNotPresentException("ERRO LISTANDO OBJETOS ", e);
+						}
+		        	}
+		        }
+		        list.add(entity);
+		        
+		    }
+	    
+		} catch (SQLException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			throw new SQLException("ERRO LISTANDO OBJETOS ", e);
+		} finally {
+			closeConnection(connection, stm, rs);
+		}
+		return list;
+    }
 
 }
