@@ -1,0 +1,16 @@
+CREATE TABLE tb_cliente (
+  idCliente BIGINT NOT NULL PRIMARY KEY,
+  nome VARCHAR(255) NOT NULL,
+  idade INTEGER NOT NULL,
+  cpf BIGINT UNIQUE NOT NULL,
+	telefone BIGINT
+);
+
+
+CREATE SEQUENCE seq_cliente
+START 1
+INCREMENT 1
+OWNED BY tb_cliente.idCliente;
+
+
+SELECT * FROM tb_cliente;
