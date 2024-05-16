@@ -15,6 +15,8 @@ public interface IClienteDao {
 	public Cliente atualizarCliente(Cliente cliente) throws Exception;
 	
 	public List<Cliente> buscarTodos() throws Exception;
+
+	public void excluirTodosClientes() throws Exception;
 	
 	
 	

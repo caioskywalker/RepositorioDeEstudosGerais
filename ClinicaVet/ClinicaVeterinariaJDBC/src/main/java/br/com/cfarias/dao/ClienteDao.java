@@ -3,7 +3,6 @@ package br.com.cfarias.dao;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +26,10 @@ public class ClienteDao implements IClienteDao {
 			stm.executeUpdate();
 
 		} catch (Exception e) {
-
+			throw e;
+		}
+		finally {
+		ConnectionFactory.fecharConexao(con, stm);
 		}
 
 		return consultarCliente(cliente.getCpf());
@@ -52,7 +54,7 @@ public class ClienteDao implements IClienteDao {
 		} catch (Exception e) {
 			throw e;
 		} finally {
-			fecharConexao(con, stm);
+			ConnectionFactory.fecharConexao(con, stm);
 		}
 
 		return clienteEncontrado;
@@ -70,7 +72,7 @@ public class ClienteDao implements IClienteDao {
 		} catch (Exception e) {
 			throw e;
 		} finally {
-			fecharConexao(con, stm);
+			ConnectionFactory.fecharConexao(con, stm);
 		}
 
 	}
@@ -87,20 +89,21 @@ public class ClienteDao implements IClienteDao {
 			con = ConnectionFactory.getConnection();
 			String sql = """
 					UPDATE tb_cliente
-					SET nome = ?
-					SET idade = ?
-					set telefone = ?
+					SET nome = ?, 
+					idade = ?, 
+					telefone = ?
 					WHERE cpf = ?;
 					""";
 			stm = con.prepareStatement(sql);
 			stm.setString(1, cliente.getNome());
 			stm.setInt(2, cliente.getIdade());
 			stm.setLong(3, cliente.getTelefone());
+			stm.setLong(4, cliente.getCpf());
 			stm.executeUpdate();
 		} catch (Exception e) {
 			throw e;
 		} finally {
-			fecharConexao(con, stm);
+			ConnectionFactory.fecharConexao(con, stm);
 		}
 
 		return consultarCliente(cliente.getCpf());
@@ -123,20 +126,28 @@ public class ClienteDao implements IClienteDao {
 		}catch(Exception e) {
 			throw e;
 		}finally {
-			fecharConexao(con, stm);
+			ConnectionFactory.fecharConexao(con, stm);
 		}
 		return resultList;
 	}
-
-	public void fecharConexao(Connection connection, PreparedStatement stm) throws SQLException {
-
-		if (stm != null && !stm.isClosed()) { // se o PreparedStatement não for nulo, ou não estiver fechado, feche-o!
-			stm.close();
+	
+	public void excluirTodosClientes() throws Exception {
+		Connection con = null;
+		PreparedStatement stm = null;
+		
+		try {
+			con = ConnectionFactory.getConnection();
+			stm = con.prepareStatement("DELETE FROM tb_cliente;");
+			stm.executeUpdate();
+		}catch(Exception e) {
+			throw e;
+		}finally {
+			ConnectionFactory.fecharConexao(con, stm);
 		}
-		if (connection != null && !connection.isClosed()) { // se a Conexão não for nula, ou não estiver fechada,
-															// feche-a!
-			connection.close();
-		}
+				
 	}
+
+	
+	
 
 }

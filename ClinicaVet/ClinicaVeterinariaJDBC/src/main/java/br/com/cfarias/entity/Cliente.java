@@ -108,7 +108,17 @@ public class Cliente {
 	public void setAnimais(Set<Animal> animais) {
 		this.animais = animais;
 	}
+
+
+
+	@Override
+	public String toString() {
+		return "Cliente [idCliente=" + idCliente + ", nome=" + nome + ", idade=" + idade + ", cpf=" + cpf
+				+ ", telefone=" + telefone + ", endereco=" + endereco + ", animais=" + animais + "]";
+	}
 	
+	
+
 	
 	
 	
